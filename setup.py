@@ -37,7 +37,7 @@ long_description = read_long_description('README.rst')
 TEST_REQUIRES = ['pytest>=5.4', 'pytest-mock', 'pytest-cov', 'pytest-pylint', 'mypy', 'pylint']
 DOC_REQUIRES = ['sphinx', 'sphinx_rtd_theme']
 DEV_REQUIRES = ['tox', 'wheel', 'twine']
-INSTALL_REQUIRES = []
+INSTALL_REQUIRES = ['pyserial']
 
 try:
     from typing import Protocol

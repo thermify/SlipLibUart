@@ -80,6 +80,7 @@ from .slip import *
 from .slipwrapper import *
 from .slipsocket import *
 from .slipstream import *
+from .slipuart import *
 from .sliprequesthandler import *
 from .version import __version__
 
@@ -92,6 +93,7 @@ __all__ = [
     'SlipSocket',
     'SlipRequestHandler',
     'SlipStream',
+    'SlipUart',
     'ProtocolError',
     'END',
     'ESC',

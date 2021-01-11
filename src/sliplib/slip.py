@@ -112,6 +112,7 @@ def is_valid(packet: bytes) -> bool:
     Returns:
         :const:`True` if the packet is valid, :const:`False` otherwise
     """
+    print('is_valid: {}'.format(packet))
     packet = packet.strip(END)
     return not (END in packet or
                 packet.endswith(ESC) or
@@ -168,6 +169,7 @@ class Driver:
             ProtocolError: When `data` contains an invalid byte sequence.
         """
 
+
         # When a single byte is fed into this function
         # it is received as an integer, not as a bytes object.
         # It must first be converted into a bytes object.
@@ -179,6 +181,9 @@ class Driver:
         # current contents of _recv_buffer will form a complete message.
         if not data:
             data = END
+            print('Driver.receive: synthesize END')
+        else:
+            print('Driver.receive: {}'.format(data))
 
         self._recv_buffer += data
 
