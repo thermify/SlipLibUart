@@ -112,11 +112,13 @@ def is_valid(packet: bytes) -> bool:
     Returns:
         :const:`True` if the packet is valid, :const:`False` otherwise
     """
-    print('is_valid: {}'.format(packet))
-    packet = packet.strip(END)
-    return not (END in packet or
-                packet.endswith(ESC) or
-                re.search(ESC + b'[^' + ESC_END + ESC_ESC + b']', packet))
+    #payload = packet.strip(END)
+    payload = packet
+    valid = not (END in payload or
+                payload.endswith(ESC) or
+                re.search(ESC + b'[^' + ESC_END + ESC_ESC + b']', payload))
+    print('is_valid: {} {}'.format(packet.hex(), valid))
+    return valid
 
 
 class Driver:
@@ -180,10 +182,11 @@ class Driver:
         # To force a buffer flush, an END byte is added, so that the
         # current contents of _recv_buffer will form a complete message.
         if not data:
-            data = END
-            print('Driver.receive: synthesize END')
-        else:
-            print('Driver.receive: {}'.format(data))
+            #data = END
+            #print('Driver.receive: synthesize END')
+            None
+        # else:
+        #     print('Driver.receive: {}'.format(data))
 
         self._recv_buffer += data
 

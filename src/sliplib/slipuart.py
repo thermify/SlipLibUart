@@ -94,11 +94,11 @@ class SlipUart(SlipWrapper):
         """
         self._chunk_size = chunk_size if chunk_size > 0 else 1
         self._uart = uart
-        super().__init__(self._uart, timeout = 3)
+        super().__init__(self._uart)
 
     def send_bytes(self, packet: bytes) -> None:
         """See base class"""
-        print('SlipUart.send_bytes: {}'.format(packet))
+        print('SlipUart.send_bytes: {}'.format(packet.hex()))
         while packet:
             number_of_bytes_written = self.stream.write(packet)
             packet = packet[number_of_bytes_written:]
@@ -106,12 +106,14 @@ class SlipUart(SlipWrapper):
     def recv_bytes(self) -> bytes:
         """See base class"""
         ret = b'' if self._stream_is_closed else self.stream.read(self._chunk_size)
-        print('SlipUart.recv_bytes: {}'.format(ret))
+        if ret:
+            print('SlipUart.recv_bytes: {}'.format(ret.hex()))
         return ret
 
     def read_timed_out(self) -> bool:
         """See base class"""
-        return True
+        # Always assume timeout triggered if asked
+        return self._uart.timeout is not None
 
     @property
     def readable(self) -> bool:

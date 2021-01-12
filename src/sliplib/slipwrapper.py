@@ -55,7 +55,7 @@ class SlipWrapper:
        Allow iteration over a :class:`SlipWrapper` instance.
     """
 
-    def __init__(self, stream: Any, timeout: float):
+    def __init__(self, stream: Any):
         """
         To instantiate a :class:`SlipWrapper`, the user must provide
         an existing byte stream
@@ -70,7 +70,6 @@ class SlipWrapper:
         self._traceback = None  # type: Optional[TracebackType]
         self._flush_needed = False
         self._stream_closed = False
-        self._timeout = timeout
 
     def send_bytes(self, packet: bytes) -> None:
         """Send a packet over the stream.
@@ -144,7 +143,8 @@ class SlipWrapper:
                     self._messages.extend(self.driver.flush())
                 else:
                     data = self.recv_bytes()
-                    print('SlipWrapper.recv_msg: {}'.format(data))
+                    # if data != b'':
+                    #     print('SlipWrapper.recv_msg: {}'.format(data))
                     if data == b'' and not self.read_timed_out():
                         print('recv_msg: closing stream')
                         self._stream_closed = True
