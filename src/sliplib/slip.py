@@ -43,13 +43,19 @@ Classes
 import collections
 import re
 from typing import Deque, List, Union
+from datetime import datetime, timedelta
 
 END = b'\xc0'
 ESC = b'\xdb'
 ESC_END = b'\xdc'
 ESC_ESC = b'\xdd'
+
 """These constants represent the special SLIP bytes"""
 
+# When receceiving a SLIP frame start, it must complete reception in this time
+# (regardless of its length, sorry) to avoid corrupt/missing END byte from
+# flipping the frame reception state machine out of phase with sender.
+SLIP_FRAME_COMPLETION_TIMEOUT_S = 3
 
 class ProtocolError(ValueError):
     """Exception to indicate that a SLIP protocol error has occurred.
@@ -112,11 +118,10 @@ def is_valid(packet: bytes) -> bool:
     Returns:
         :const:`True` if the packet is valid, :const:`False` otherwise
     """
-    #payload = packet.strip(END)
-    payload = packet
-    valid = not (END in payload or
-                payload.endswith(ESC) or
-                re.search(ESC + b'[^' + ESC_END + ESC_ESC + b']', payload))
+
+    valid = not (END in packet or
+                packet.endswith(ESC) or
+                re.search(ESC + b'[^' + ESC_END + ESC_ESC + b']', packet))
     print('is_valid: {} {}'.format(packet.hex(), valid))
     return valid
 
@@ -129,9 +134,11 @@ class Driver:
     """
 
     def __init__(self) -> None:
-        self._recv_buffer = b''
+        self._recv_buffer = bytearray()
         self._packets = collections.deque()  # type: Deque[bytes]
         self._messages = []  # type: List[bytes]
+        self._curr_frame = None # indicates whe're in the middle of receiving a frame
+        self._curr_frame_deadline = None # Timeout for completing a frame
 
     def send(self, message: bytes) -> bytes:  # pylint: disable=no-self-use
         """Encodes a message into a SLIP-encoded packet.
@@ -171,42 +178,58 @@ class Driver:
             ProtocolError: When `data` contains an invalid byte sequence.
         """
 
+        if data != b'':
+            # When a single byte is fed into this function
+            # it is received as an integer, not as a bytes object.
+            # It must first be converted into a bytes object.
+            if isinstance(data, int):
+                print('Driver.receive: making bytes from int {}'.format(hex(data)))
+                data = bytes((data,))
 
-        # When a single byte is fed into this function
-        # it is received as an integer, not as a bytes object.
-        # It must first be converted into a bytes object.
-        if isinstance(data, int):
-            data = bytes((data,))
+            self._recv_buffer += data
+            print('Driver.receive: got {} buffer now: {}'.format(data.hex(), self._recv_buffer.hex()))
 
-        # Empty data indicates that the data reception is complete.
-        # To force a buffer flush, an END byte is added, so that the
-        # current contents of _recv_buffer will form a complete message.
-        if not data:
-            #data = END
-            #print('Driver.receive: synthesize END')
-            None
-        # else:
-        #     print('Driver.receive: {}'.format(data))
+            # The following situations can occur:
+            #
+            #  1) _recv_buffer is empty or contains only END bytes --> no packets available
+            #  2) _recv_buffer contains non-END bytes -->  packets are available
+            #  3) _recv_buffer contains out-of-frame garbage or frames with corrupt
+            #   END bytes (which flips frame phase between sender and reciver)
+            while len(self._recv_buffer) > 0:
+                byte = bytes((self._recv_buffer.pop(0),))
+                print('Driver.receive: pop from buffer {}'.format(byte.hex()))
+                if byte == END:
+                    if self._curr_frame is None:
+                        # A frame has started
+                        print('Driver.receive: got END, start frame')
+                        self._curr_frame_deadline = datetime.now() + timedelta(seconds = SLIP_FRAME_COMPLETION_TIMEOUT_S)
+                        self._curr_frame = bytearray(b'')
+                    else:
+                        # A frame has ended
+                        if datetime.now() > self._curr_frame_deadline:
+                            # Timeout for completing the current frame has expired.
+                            # Assume END for current frame was lost or corrupted and
+                            # this is the start of a subsequent frame. Declare current
+                            # frame as lost and start new frame.
+                            print('Driver.receive: frame timeout exceeded by {}'.format(datetime.now() - self._curr_frame_deadline))
+                            self._curr_frame_deadline = datetime.now() + timedelta(seconds = SLIP_FRAME_COMPLETION_TIMEOUT_S)
+                            self._curr_frame = bytearray(b'')
+                        else:
+                            print('Driver.receive: got END, end frame {}'.format(self._curr_frame.hex()))
+                            self._packets.append(self._curr_frame)
+                            self._curr_frame = None
+                else:
+                    if self._curr_frame is None:
+                        print('Driver.receive: ignore out of frame garbage {}'.format(byte.hex()))
+                    else:
+                        self._curr_frame += byte
 
-        self._recv_buffer += data
-
-        # The following situations can occur:
-        #
-        #  1) _recv_buffer is empty or contains only END bytes --> no packets available
-        #  2) _recv_buffer contains non-END bytes -->  packets are available
-        #
-        # Strip leading END bytes from _recv_buffer to avoid handling empty _packets.
-        self._recv_buffer = self._recv_buffer.lstrip(END)
-        if self._recv_buffer:
-            # The _recv_buffer contains non-END bytes.
-            # It is now split on sequences of one or more END bytes.
-            # The trailing element from the split operation is a possibly incomplete
-            # packet; this element is therefore used as the new _recv_buffer.
-            # If _recv_buffer contains one or more trailing END bytes,
-            # (meaning that there are no incomplete packets), then the last element,
-            # and therefore the new _recv_buffer, is an empty bytes object.
-            self._packets.extend(re.split(END + b'+', self._recv_buffer))
-            self._recv_buffer = self._packets.pop()
+            if self._curr_frame is not None:
+                # Not finished receivng the entire frame, restore the buffer
+                # FIXME: copying the half-receivd frame back and forth
+                self._recv_buffer = bytearray(END) + self._curr_frame
+                self._curr_frame = None
+                print('Driver.receive: restored RX buffer to {}'.format(self._recv_buffer.hex()))
 
         # Process the buffered packets
         return self.flush()

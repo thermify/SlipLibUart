@@ -25,16 +25,6 @@ except ImportError:
     from typing_extensions import Protocol  # type: ignore
 from .slipwrapper import SlipWrapper
 
-
-class _ProtoStream(Protocol):
-    """Protocol class for wrappable streams"""
-
-    def read(self, chunksize: int) -> bytes:
-        """Read `chunksize` bytes from the stream"""
-
-    def write(self, data: bytes) -> int:
-        """Write data to the stream."""
-
 class SlipUart(SlipWrapper):
     """Class that wraps an UART stream with a :class:`Driver`
 
