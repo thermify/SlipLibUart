@@ -96,8 +96,8 @@ class SlipUart(SlipWrapper):
     def recv_bytes(self) -> bytes:
         """See base class"""
         ret = b'' if self._stream_is_closed else self.stream.read(self._chunk_size)
-        if ret:
-            print('SlipUart.recv_bytes: {}'.format(ret.hex()))
+        # if ret:
+        #     print('SlipUart.recv_bytes: {}'.format(ret.hex()))
         return ret
 
     def read_timed_out(self) -> bool:

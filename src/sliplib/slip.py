@@ -55,7 +55,7 @@ ESC_ESC = b'\xdd'
 # When receceiving a SLIP frame start, it must complete reception in this time
 # (regardless of its length, sorry) to avoid corrupt/missing END byte from
 # flipping the frame reception state machine out of phase with sender.
-SLIP_FRAME_COMPLETION_TIMEOUT_S = 3
+SLIP_FRAME_COMPLETION_TIMEOUT_S = 1
 
 class ProtocolError(ValueError):
     """Exception to indicate that a SLIP protocol error has occurred.
@@ -134,7 +134,6 @@ class Driver:
     """
 
     def __init__(self) -> None:
-        self._recv_buffer = bytearray()
         self._packets = collections.deque()  # type: Deque[bytes]
         self._messages = []  # type: List[bytes]
         self._curr_frame = None # indicates whe're in the middle of receiving a frame
@@ -186,18 +185,11 @@ class Driver:
                 print('Driver.receive: making bytes from int {}'.format(hex(data)))
                 data = bytes((data,))
 
-            self._recv_buffer += data
-            print('Driver.receive: got {} buffer now: {}'.format(data.hex(), self._recv_buffer.hex()))
+            #print('Driver.receive: got {} frame now: {}'.format(data.hex(), self._curr_frame.hex() if self._curr_frame is not None else 'None'))
 
-            # The following situations can occur:
-            #
-            #  1) _recv_buffer is empty or contains only END bytes --> no packets available
-            #  2) _recv_buffer contains non-END bytes -->  packets are available
-            #  3) _recv_buffer contains out-of-frame garbage or frames with corrupt
-            #   END bytes (which flips frame phase between sender and reciver)
-            while len(self._recv_buffer) > 0:
-                byte = bytes((self._recv_buffer.pop(0),))
-                print('Driver.receive: pop from buffer {}'.format(byte.hex()))
+            for byte in data:
+                byte = bytes((byte,))
+                # print('Driver.receive: got {}'.format(byte.hex()))
                 if byte == END:
                     if self._curr_frame is None:
                         # A frame has started
@@ -223,13 +215,6 @@ class Driver:
                         print('Driver.receive: ignore out of frame garbage {}'.format(byte.hex()))
                     else:
                         self._curr_frame += byte
-
-            if self._curr_frame is not None:
-                # Not finished receivng the entire frame, restore the buffer
-                # FIXME: copying the half-receivd frame back and forth
-                self._recv_buffer = bytearray(END) + self._curr_frame
-                self._curr_frame = None
-                print('Driver.receive: restored RX buffer to {}'.format(self._recv_buffer.hex()))
 
         # Process the buffered packets
         return self.flush()
