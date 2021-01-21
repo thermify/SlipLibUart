@@ -122,7 +122,8 @@ def is_valid(packet: bytes) -> bool:
     valid = not (END in packet or
                 packet.endswith(ESC) or
                 re.search(ESC + b'[^' + ESC_END + ESC_ESC + b']', packet))
-    print('is_valid: {} {}'.format(packet.hex(), valid))
+    if not valid:
+        print('is_valid: {} {}'.format(packet.hex(), valid))
     return valid
 
 
@@ -212,7 +213,8 @@ class Driver:
                             self._curr_frame = None
                 else:
                     if self._curr_frame is None:
-                        print('Driver.receive: ignore out of frame garbage {}'.format(byte.hex()))
+                        #print('Driver.receive: ignore out of frame garbage {}'.format(byte.hex()))
+                        None
                     else:
                         self._curr_frame += byte
 
