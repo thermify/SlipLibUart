@@ -145,9 +145,13 @@ class SlipWrapper:
                     data = self.recv_bytes()
                     # if data != b'':
                     #     print('SlipWrapper.recv_msg: {}'.format(data))
-                    if data == b'' and not self.read_timed_out():
-                        print('recv_msg: closing stream')
-                        self._stream_closed = True
+                    if data == b'':
+                        if self.read_timed_out():
+                            print('SlipWrapper.recv_msg: read timed out')
+                        else:
+                            print('SlipWrapper.recv_msg: read error, closing stream')
+                            self._stream_closed = True
+                        break
                     if isinstance(data, int):  # Single byte reads are represented as integers
                         data = bytes([data])
                     self._messages.extend(self.driver.receive(data))
