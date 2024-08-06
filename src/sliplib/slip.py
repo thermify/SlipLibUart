@@ -44,11 +44,14 @@ import collections
 import re
 from typing import Deque, List, Union
 from datetime import datetime, timedelta
+import logging
 
-END = b'\xc0'
-ESC = b'\xdb'
-ESC_END = b'\xdc'
-ESC_ESC = b'\xdd'
+logger = logging.getLogger(__name__)
+
+END = b"\xc0"
+ESC = b"\xdb"
+ESC_END = b"\xdc"
+ESC_ESC = b"\xdd"
 
 """These constants represent the special SLIP bytes"""
 
@@ -56,6 +59,7 @@ ESC_ESC = b'\xdd'
 # (regardless of its length, sorry) to avoid corrupt/missing END byte from
 # flipping the frame reception state machine out of phase with sender.
 SLIP_FRAME_COMPLETION_TIMEOUT_S = 1
+
 
 class ProtocolError(ValueError):
     """Exception to indicate that a SLIP protocol error has occurred.
@@ -119,11 +123,13 @@ def is_valid(packet: bytes) -> bool:
         :const:`True` if the packet is valid, :const:`False` otherwise
     """
 
-    valid = not (END in packet or
-                packet.endswith(ESC) or
-                re.search(ESC + b'[^' + ESC_END + ESC_ESC + b']', packet))
+    valid = not (
+        END in packet
+        or packet.endswith(ESC)
+        or re.search(ESC + b"[^" + ESC_END + ESC_ESC + b"]", packet)
+    )
     if not valid:
-        print('is_valid: {} {}'.format(packet.hex(), valid))
+        logger.info("is_valid: {} {}".format(packet.hex(), valid))
     return valid
 
 
@@ -137,8 +143,8 @@ class Driver:
     def __init__(self) -> None:
         self._packets = collections.deque()  # type: Deque[bytes]
         self._messages = []  # type: List[bytes]
-        self._curr_frame = None # indicates whe're in the middle of receiving a frame
-        self._curr_frame_deadline = None # Timeout for completing a frame
+        self._curr_frame = None  # indicates whe're in the middle of receiving a frame
+        self._curr_frame_deadline = None  # Timeout for completing a frame
 
     def send(self, message: bytes) -> bytes:  # pylint: disable=no-self-use
         """Encodes a message into a SLIP-encoded packet.
@@ -178,25 +184,34 @@ class Driver:
             ProtocolError: When `data` contains an invalid byte sequence.
         """
 
-        if data != b'':
+        if data != b"":
             # When a single byte is fed into this function
             # it is received as an integer, not as a bytes object.
             # It must first be converted into a bytes object.
             if isinstance(data, int):
-                print('Driver.receive: making bytes from int {}'.format(hex(data)))
+                logger.info(
+                    "Driver.receive: making bytes from int {}".format(hex(data))
+                )
                 data = bytes((data,))
 
-            #print('Driver.receive: got {} frame now: {}'.format(data.hex(), self._curr_frame.hex() if self._curr_frame is not None else 'None'))
+            logger.debug(
+                "Driver.receive: got {} frame now: {}".format(
+                    data.hex(),
+                    self._curr_frame.hex() if self._curr_frame is not None else "None",
+                )
+            )
 
             for byte in data:
                 byte = bytes((byte,))
-                # print('Driver.receive: got {}'.format(byte.hex()))
+                logger.debug("Driver.receive: got {}".format(byte.hex()))
                 if byte == END:
                     if self._curr_frame is None:
                         # A frame has started
-                        print('Driver.receive: got END, start frame')
-                        self._curr_frame_deadline = datetime.now() + timedelta(seconds = SLIP_FRAME_COMPLETION_TIMEOUT_S)
-                        self._curr_frame = bytearray(b'')
+                        logger.info("Driver.receive: got END, start frame")
+                        self._curr_frame_deadline = datetime.now() + timedelta(
+                            seconds=SLIP_FRAME_COMPLETION_TIMEOUT_S
+                        )
+                        self._curr_frame = bytearray(b"")
                     else:
                         # A frame has ended
                         if datetime.now() > self._curr_frame_deadline:
@@ -204,16 +219,30 @@ class Driver:
                             # Assume END for current frame was lost or corrupted and
                             # this is the start of a subsequent frame. Declare current
                             # frame as lost and start new frame.
-                            print('Driver.receive: frame timeout exceeded by {}'.format(datetime.now() - self._curr_frame_deadline))
-                            self._curr_frame_deadline = datetime.now() + timedelta(seconds = SLIP_FRAME_COMPLETION_TIMEOUT_S)
-                            self._curr_frame = bytearray(b'')
+                            logger.info(
+                                "Driver.receive: frame timeout exceeded by {}".format(
+                                    datetime.now() - self._curr_frame_deadline
+                                )
+                            )
+                            self._curr_frame_deadline = datetime.now() + timedelta(
+                                seconds=SLIP_FRAME_COMPLETION_TIMEOUT_S
+                            )
+                            self._curr_frame = bytearray(b"")
                         else:
-                            print('Driver.receive: got END, end frame {}'.format(self._curr_frame.hex()))
+                            logger.info(
+                                "Driver.receive: got END, end frame {}".format(
+                                    self._curr_frame.hex()
+                                )
+                            )
                             self._packets.append(self._curr_frame)
                             self._curr_frame = None
                 else:
                     if self._curr_frame is None:
-                        #print('Driver.receive: ignore out of frame garbage {}'.format(byte.hex()))
+                        logger.debug(
+                            "Driver.receive: ignore out of frame garbage {}".format(
+                                byte.hex()
+                            )
+                        )
                         None
                     else:
                         self._curr_frame += byte

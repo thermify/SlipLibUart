@@ -27,6 +27,10 @@ SlipWrapper
    .. automethod:: recv_bytes
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 import collections
 import sys
 from types import TracebackType
@@ -100,8 +104,7 @@ class SlipWrapper:
         raise NotImplementedError
 
     def read_timed_out(self) -> bool:
-        """Check if stream timed out on read
-        """
+        """Check if stream timed out on read"""
         raise NotImplementedError
 
     def send_msg(self, message: bytes) -> None:
@@ -144,15 +147,19 @@ class SlipWrapper:
                 else:
                     data = self.recv_bytes()
                     # if data != b'':
-                    #     print('SlipWrapper.recv_msg: {}'.format(data))
-                    if data == b'':
+                    #     logger.debug('SlipWrapper.recv_msg: {}'.format(data))
+                    if data == b"":
                         if self.read_timed_out():
-                            print('SlipWrapper.recv_msg: read timed out')
+                            logger.debug("SlipWrapper.recv_msg: read timed out")
                         else:
-                            print('SlipWrapper.recv_msg: read error, closing stream')
+                            logger.error(
+                                "SlipWrapper.recv_msg: read error, closing stream"
+                            )
                             self._stream_closed = True
                         break
-                    if isinstance(data, int):  # Single byte reads are represented as integers
+                    if isinstance(
+                        data, int
+                    ):  # Single byte reads are represented as integers
                         data = bytes([data])
                     self._messages.extend(self.driver.receive(data))
             except ProtocolError as protocol_error:
@@ -165,7 +172,7 @@ class SlipWrapper:
             return self._messages.popleft()
 
         self._handle_pending_protocol_error()
-        return b''
+        return b""
 
     def _handle_pending_protocol_error(self) -> None:
         if self._protocol_error:

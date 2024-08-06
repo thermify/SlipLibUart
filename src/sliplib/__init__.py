@@ -75,6 +75,10 @@ Exceptions
 .. currentmodule:: sliplib
 .. autoexception:: ProtocolError
 """
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 from .slip import *
 from .slipwrapper import *
@@ -85,19 +89,19 @@ from .sliprequesthandler import *
 from .version import __version__
 
 __all__ = [
-    'encode',
-    'decode',
-    'is_valid',
-    'Driver',
-    'SlipWrapper',
-    'SlipSocket',
-    'SlipRequestHandler',
-    'SlipStream',
-    'SlipUart',
-    'ProtocolError',
-    'END',
-    'ESC',
-    'ESC_END',
-    'ESC_ESC',
-    '__version__',
+    "encode",
+    "decode",
+    "is_valid",
+    "Driver",
+    "SlipWrapper",
+    "SlipSocket",
+    "SlipRequestHandler",
+    "SlipStream",
+    "SlipUart",
+    "ProtocolError",
+    "END",
+    "ESC",
+    "ESC_END",
+    "ESC_ESC",
+    "__version__",
 ]
