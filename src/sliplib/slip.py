@@ -47,6 +47,7 @@ from datetime import datetime, timedelta
 import logging
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 END = b"\xc0"
 ESC = b"\xdb"
