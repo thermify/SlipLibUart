@@ -2,8 +2,10 @@
 *.pyc
 .cache
 .coverage
+.coverage.*
 .externalToolBuilders
 .idea
+.venv
 .mypy_cache
 .project
 .pydevproject

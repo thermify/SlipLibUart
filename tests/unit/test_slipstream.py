@@ -96,7 +96,8 @@ class TestSlipStreamBasics:
         ]
 
     def test_slipstream_writing_single_bytes(self, mocker):
-        """Verify that sending messages work when the stream's write method does not handle all the bytes at once."""
+        """Verify that sending messages work when the stream's
+        write method does not handle all the bytes at once."""
         msg_list = [b"hallo", b"bye"]
         self.stream_mock.write.return_value = 1
         for msg in msg_list:

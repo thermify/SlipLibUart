@@ -141,8 +141,8 @@ class Driver:
     """
 
     def __init__(self) -> None:
-        self._packets = collections.deque()  # type: Deque[bytes]
-        self._messages = []  # type: List[bytes]
+        self._packets: Deque[bytes] = collections.deque()
+        self._messages: List[bytes] = []
         self._curr_frame = None  # indicates whe're in the middle of receiving a frame
         self._curr_frame_deadline = None  # Timeout for completing a frame
 
@@ -220,9 +220,8 @@ class Driver:
                             # this is the start of a subsequent frame. Declare current
                             # frame as lost and start new frame.
                             logger.info(
-                                "Driver.receive: frame timeout exceeded by {}".format(
-                                    datetime.now() - self._curr_frame_deadline
-                                )
+                                "Driver.receive: frame timeout exceeded by %s",
+                                datetime.now() - self._curr_frame_deadline,
                             )
                             self._curr_frame_deadline = datetime.now() + timedelta(
                                 seconds=SLIP_FRAME_COMPLETION_TIMEOUT_S
@@ -230,20 +229,16 @@ class Driver:
                             self._curr_frame = bytearray(b"")
                         else:
                             logger.info(
-                                "Driver.receive: got END, end frame {}".format(
-                                    self._curr_frame.hex()
-                                )
+                                "Driver.receive: got END, end frame %s",
+                                self._curr_frame.hex(),
                             )
                             self._packets.append(self._curr_frame)
                             self._curr_frame = None
                 else:
                     if self._curr_frame is None:
                         logger.debug(
-                            "Driver.receive: ignore out of frame garbage {}".format(
-                                byte.hex()
-                            )
+                            "Driver.receive: ignore out of frame garbage %s", byte.hex()
                         )
-                        None
                     else:
                         self._curr_frame += byte
 

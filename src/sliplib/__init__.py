@@ -76,23 +76,23 @@ Exceptions
 .. autoexception:: ProtocolError
 """
 
+from .slip import encode, decode, is_valid, END, ESC, ESC_END, ESC_ESC, ProtocolError
+from .slipwrapper import SlipWrapper, Driver
+from .slipsocket import SlipSocket, socket
+from .slipstream import SlipStream
+from .slipuart import SlipUart
+from .sliprequesthandler import SlipRequestHandler
+from .version import __version__
+
 import logging
 
 logger = logging.getLogger(__name__).addHandler(logging.NullHandler())
-
-
-from .slip import *
-from .slipwrapper import *
-from .slipsocket import *
-from .slipstream import *
-from .slipuart import *
-from .sliprequesthandler import *
-from .version import __version__
 
 __all__ = [
     "encode",
     "decode",
     "is_valid",
+    "socket",
     "Driver",
     "SlipWrapper",
     "SlipSocket",

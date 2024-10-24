@@ -27,7 +27,7 @@ from typing import Any
 try:
     from typing import Protocol
 except ImportError:
-    from typing_extensions import Protocol  # type: ignore
+    pass  # type: ignore
 from .slipwrapper import SlipWrapper
 
 

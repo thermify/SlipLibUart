@@ -210,7 +210,8 @@ class TestSlipSocket:
         assert self.slipsocket.recv_msg() == b"bye"
 
     def test_accept_method(self, mocker):
-        """Test that the accept method is delegated to the socket, and that the result is a SlipSocket."""
+        """Test that the accept method is delegated to the socket,
+        and that the result is a SlipSocket."""
         new_socket = mocker.Mock(
             spec=socket.socket(family=self.family),
             family=self.family,
@@ -285,7 +286,8 @@ class TestSlipSocket:
     # This will be removed due to deprecation of delegating methods to the wrapped socket.
     @pytest.mark.parametrize("method", DELEGATED_METHODS)
     def test_delegated_methods(self, method, mocker):
-        """Test that other delegated methods are delegated to the socket, but also issue a deprecation warning."""
+        """Test that other delegated methods are delegated to the socket,
+        but also issue a deprecation warning."""
         mock_method = mocker.Mock()
         setattr(self.sock_mock, method, mock_method)
         with warnings.catch_warnings(record=True) as warning:

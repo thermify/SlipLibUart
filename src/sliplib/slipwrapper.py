@@ -33,8 +33,7 @@ logger = logging.getLogger(__name__)
 
 import collections
 import sys
-from types import TracebackType
-from typing import Any, Deque, Optional
+from typing import Any
 
 from .slip import Driver, ProtocolError
 

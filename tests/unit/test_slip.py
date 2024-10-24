@@ -161,7 +161,7 @@ class TestDriver:
         msg = b"hallo\0bye"
         packet = END + msg
         for byte_ in packet:
-            assert self.driver.receive(byte_) == []
+            assert not self.driver.receive(byte_)
         assert self.driver.receive(END) == [msg]
 
     def test_flush_buffers_with_empty_packet(self):
@@ -196,7 +196,7 @@ class TestDriver:
             self.driver.receive(packet)
         assert self.driver.messages == msgs[:1]
         # Verify that the messages attribute is cleared after reading
-        assert self.driver.messages == []
+        assert not self.driver.messages
         assert exc_info.value.args == (msgs[1],)
 
     def test_messages_after_invalid_packets(self):
