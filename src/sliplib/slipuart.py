@@ -16,14 +16,20 @@ SlipUart
    .. autoattribute:: writable
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 import serial
 import warnings
 from typing import Any
+
 try:
     from typing import Protocol
 except ImportError:
-    from typing_extensions import Protocol  # type: ignore
+    pass  # type: ignore
 from .slipwrapper import SlipWrapper
+
 
 class SlipUart(SlipWrapper):
     """Class that wraps an UART stream with a :class:`Driver`
@@ -52,6 +58,7 @@ class SlipUart(SlipWrapper):
        will be removed in version 1.0
 
     """
+
     def __init__(self, uart: serial.Serial, chunk_size: int = 1):
         # pylint: disable=missing-raises-doc
         """
@@ -88,16 +95,16 @@ class SlipUart(SlipWrapper):
 
     def send_bytes(self, packet: bytes) -> None:
         """See base class"""
-        print('SlipUart.send_bytes: {}'.format(packet.hex()))
+        logger.info("SlipUart.send_bytes: {}".format(packet.hex()))
         while packet:
             number_of_bytes_written = self.stream.write(packet)
             packet = packet[number_of_bytes_written:]
 
     def recv_bytes(self) -> bytes:
         """See base class"""
-        ret = b'' if self._stream_is_closed else self.stream.read(self._chunk_size)
+        ret = b"" if self._stream_is_closed else self.stream.read(self._chunk_size)
         # if ret:
-        #     print('SlipUart.recv_bytes: {}'.format(ret.hex()))
+        #     logger.debug('SlipUart.recv_bytes: {}'.format(ret.hex()))
         return ret
 
     def read_timed_out(self) -> bool:
@@ -111,7 +118,7 @@ class SlipUart(SlipWrapper):
         The value is `True` if the readability of the wrapped stream
         cannot be determined.
         """
-        return getattr(self.stream, 'readable', True)
+        return getattr(self.stream, "readable", True)
 
     @property
     def writable(self) -> bool:
@@ -119,21 +126,42 @@ class SlipUart(SlipWrapper):
         The value is `True` if the writabilty of the wrapped stream
         cannot be determined.
         """
-        return getattr(self.stream, 'writable', True)
+        return getattr(self.stream, "writable", True)
 
     @property
     def _stream_is_closed(self) -> bool:
-        """Indicates if the UART is closed.
-        """
+        """Indicates if the UART is closed."""
         return not self._uart.is_open
 
     def __getattr__(self, attribute: str) -> Any:
-        if attribute.startswith('read') or attribute.startswith('write') or attribute in (
-                'detach', 'flushInput', 'flushOutput', 'getbuffer', 'getvalue', 'peek', 'raw', 'reset_input_buffer',
-                'reset_output_buffer', 'seek', 'seekable', 'tell', 'truncate'
+        if (
+            attribute.startswith("read")
+            or attribute.startswith("write")
+            or attribute
+            in (
+                "detach",
+                "flushInput",
+                "flushOutput",
+                "getbuffer",
+                "getvalue",
+                "peek",
+                "raw",
+                "reset_input_buffer",
+                "reset_output_buffer",
+                "seek",
+                "seekable",
+                "tell",
+                "truncate",
+            )
         ):
-            raise AttributeError("'{}' object has no attribute '{}'".
-                                 format(self.__class__.__name__, attribute))
-        warnings.warn("Direct access to the enclosed stream attributes and methods will be removed in version 1.0",
-                      DeprecationWarning, stacklevel=2)
+            raise AttributeError(
+                "'{}' object has no attribute '{}'".format(
+                    self.__class__.__name__, attribute
+                )
+            )
+        warnings.warn(
+            "Direct access to the enclosed stream attributes and methods will be removed in version 1.0",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return getattr(self.stream, attribute)
